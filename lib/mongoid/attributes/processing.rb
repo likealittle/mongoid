@@ -92,9 +92,18 @@ module Mongoid #:nodoc:
       #
       # @since 2.0.0.rc.7
       def process_attribute(name, value)
+        unless respond_to?("#{name}=")
+          self.class.fields.each_pair {|key, field|
+            s = field.options[:store] and s == name and
+              name = key
+          }
+        end
+        puts "#{name} = #{value} ;;"
         if Mongoid.allow_dynamic_fields && !respond_to?("#{name}=")
+          puts "write"
           write_attribute(name, value)
         else
+          puts "send"
           send("#{name}=", value)
         end
       end

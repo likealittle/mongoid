@@ -124,6 +124,7 @@ module Mongoid #:nodoc:
     # @return [ Document ] A new document.
     def initialize(attrs = nil, options = nil)
       _building do
+        puts "init: #{attrs}"
         @new_record = true
         @attributes ||= {}
         options ||= {}
@@ -167,15 +168,25 @@ module Mongoid #:nodoc:
     #
     # @return [ Hash ] A hash of all attributes in the hierarchy.
     def as_document
+      puts "fields: #{self.class.fields}"
+      puts "attributes: #{attributes}"
       attributes.tap do |attrs|
         break if frozen?
         relations.each_pair do |name, meta|
+          puts "(name,meta):(#{name},#{meta})"
           if meta.embedded?
             relation = send(name)
             attrs[name] = relation.as_document unless relation.blank?
           end
         end
       end
+      res = {}
+      attributes.each_pair { |key, value|
+        f = self.class.fields[key] and key = f.options[:store] || key
+        res[key] = value
+      }
+      puts "atr: #{attributes}; res: #{res}"
+      res
     end
 
     # Returns an instance of the specified class with the attributes
@@ -285,11 +296,23 @@ module Mongoid #:nodoc:
       def instantiate(attrs = nil)
         attributes = attrs || {}
         allocate.tap do |doc|
-          doc.instance_variable_set(:@attributes, attributes)
+          puts "direct inst: #{attrs}"
+          doc.instance_variable_set(:@attributes, 
+            convert_store_names_to_real_names(attributes))
           doc.send(:apply_defaults)
           IdentityMap.set(doc) unless _loading_revision?
           doc.run_callbacks(:initialize) { doc }
         end
+      end
+
+      # Convert the shortened storage names of attributes into real names.
+      def convert_store_names_to_real_names(attributes)
+        mp = Hash[fields.to_a.collect {|key, field| [field.options[:store], key] }]
+        res = {}
+        attributes.each_pair { |key, value|
+          res[mp[key] || key] = value
+        }
+        res
       end
 
       # Returns all types to query for when using this class as the base.

@@ -236,6 +236,7 @@ module Mongoid #:nodoc
           process_options(field)
           define_attribute_method(name)
         end
+        puts "ff:#{fields}"
       end
 
       # Run through all custom options stored in Mongoid::Fields.options and
