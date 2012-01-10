@@ -17,6 +17,7 @@ module Mongoid #:nodoc:
         class_eval <<-EOS, __FILE__, __LINE__
           def #{name}(*args)
             retry_on_connection_failure do
+              p args
               collection.#{name}(*args)
             end
           end
